@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Streaming</title>
+    <style>
+        /* General styles */
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            height: 100vh;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+        }
+
+        #stop-button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        #search-bar {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .songs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .song-item {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 150px;
+            height: 150px;
+        }
+
+        .song-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .song-item .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .song-item:hover .overlay {
+            opacity: 1;
+        }
+
+        .song-item .overlay .play-btn {
+            background: white;
+            border-radius: 50%;
+            padding: 10px;
+            font-size: 18px;
+        }
+
+        .song-name {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .sidebar p {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Now Playing</h2>
+        <p id="now-playing">No song playing</p>
+        <p id="song-duration">00:00</p>
+        <button id="stop-button">Stop</button>
+    </div>
+
+    <div class="main-content">
+        <h1>SONGS</h1>
+        <input type="text" id="search-bar" placeholder="Search for a song">
+        <div class="songs-grid" id="songs-grid">
+            <!-- Songs will be dynamically added here -->
+        </div>
+    </div>
+
+    <audio id="audio-player"></audio>
+
+    <script>
+        const audioPlayer = document.getElementById('audio-player');
+        const stopButton = document.getElementById('stop-button');
+        const nowPlaying = document.getElementById('now-playing');
+        const songDuration = document.getElementById('song-duration');
+        const searchBar = document.getElementById('search-bar');
+        const songsGrid = document.getElementById('songs-grid');
+
+        // Sample data for songs
+        const songs = [
+            { name: 'Spin The Wheel', url: 'https://drive.google.com/file/d/1oAw5Z3MQnAkf6wAIRXlHMAiETU8L9O2p/view?usp=drive_link', image: 'https://drive.google.com/file/d/1gxdKgJFoZ0yZXZDY2bYwlDMi3ksHw5dH/view?usp=drive_link' },
+            { name: 'Song 2', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', image: 'https://via.placeholder.com/150' },
+            { name: 'Song 3', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', image: 'https://via.placeholder.com/150' },
+            // Add more songs here
+        ];
+
+        // Function to render songs grid
+        function renderSongs(songsToRender) {
+            songsGrid.innerHTML = '';  // Clear current grid
+
+            songsToRender.forEach(song => {
+                const songItem = document.createElement('div');
+                songItem.classList.add('song-item');
+                
+                const songImage = document.createElement('img');
+                songImage.src = song.image;
+                
+                const overlay = document.createElement('div');
+                overlay.classList.add('overlay');
+                
+                const playButton = document.createElement('button');
+                playButton.classList.add('play-btn');
+                playButton.textContent = '▶';
+                playButton.addEventListener('click', () => playSong(song));
+                
+                overlay.appendChild(playButton);
+                songItem.appendChild(songImage);
+                songItem.appendChild(overlay);
+                
+                const songName = document.createElement('div');
+                songName.classList.add('song-name');
+                songName.textContent = song.name;
+                songItem.appendChild(songName);
+                
+                songsGrid.appendChild(songItem);
+            });
+        }
+
+        // Function to play song
+        function playSong(song) {
+            audioPlayer.src = song.url;
+            audioPlayer.play();
+            nowPlaying.textContent = song.name;
+            audioPlayer.addEventListener('timeupdate', updateDuration);
+        }
+
+        // Function to update song duration
+        function updateDuration() {
+            const currentTime = audioPlayer.currentTime;
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = Math.floor(currentTime % 60);
+            songDuration.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        // Function to stop the audio
+        function stopAudio() {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            nowPlaying.textContent = 'No song playing';
+            songDuration.textContent = '00:00';
+        }
+
+        // Event listener for stop button
+        stopButton.addEventListener('click', stopAudio);
+
+        // Event listener for search bar
+        searchBar.addEventListener('input', () => {
+            const query = searchBar.value.toLowerCase();
+            const filteredSongs = songs.filter(song => song.name.toLowerCase().includes(query));
+            renderSongs(filteredSongs);
+        });
+
+        // Initial render
+        renderSongs(songs);
+    </script>
+</body>
+</html>
